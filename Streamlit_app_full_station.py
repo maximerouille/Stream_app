@@ -38,7 +38,7 @@ def voyage(heure_depart, id_gare_depart, id_gare_arrivee):
     return trajet_df
 
 # Chargement et préparation des données des gares
-df_gares = pd.read_csv("gares.csv")
+df_gares = pd.read_csv("C:\Users\maxim\Downloads\Listes_gares")
 dict_gares = pd.Series(df_gares.id_gare.values, index=df_gares.nom_gare).to_dict()
 
 # Interface Streamlit
