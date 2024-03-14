@@ -33,10 +33,38 @@ def extraire_donnees_trajet(reponse_api):
                         Arrivee=convertir_en_temps(i['arrival_date_time'])
                     ))
     return pd.DataFrame(rows)
-
 def voyage(heure_depart, gare_depart, gares_intermediaires, gare_arrivee):
-    # Vous devez implémenter cette fonction pour gérer les gares intermédiaires
-    pass
+    segments = [gare_depart] + gares_intermediaires + [gare_arrivee]  # Construction de la liste des gares pour chaque segment
+    trajets_complets = pd.DataFrame()  # Initialisation d'un DataFrame vide pour stocker les résultats de chaque segment
+
+    # Initialisation de l'heure de départ pour le premier segment
+    heure_actuelle_depart = heure_depart
+
+    for i in range(len(segments) - 1):
+        gare_debut = segments[i]
+        gare_fin = segments[i+1]
+
+        date_depart_segment = convertir_en_chaine(heure_actuelle_depart)
+
+        # Requête à l'API pour le segment actuel
+        response = requests.get(
+            f'https://api.sncf.com/v1/coverage/sncf/journeys?from={gare_debut}&to={gare_fin}&datetime={date_depart_segment}',
+            auth=(token_auth, '')
+        ).json()
+
+        # Extraction des données du trajet pour le segment actuel
+        df_segment = extraire_donnees_trajet(response)
+        
+        # Si le DataFrame du segment n'est pas vide, ajustez l'heure de départ pour le prochain segment
+        if not df_segment.empty:
+            derniere_arrivee = df_segment['Arrivee'].max()
+            # Ajoute un délai avant le prochain segment (par exemple, 10 minutes)
+            heure_actuelle_depart = derniere_arrivee + timedelta(minutes=10)
+
+        # Concaténation des résultats du segment actuel avec les trajets complets
+        trajets_complets = pd.concat([trajets_complets, df_segment])
+
+    return trajets_complets
 
 # Interface Streamlit
 st.title("Calculateur d'itinéraire SNCF avec choix des gares intermédiaires")
