@@ -48,8 +48,8 @@ def voyage(heure_depart, gare_depart, gare_arrivee):
 st.title("Calculateur d'itinéraire SNCF")
 
 # Sélection de la gare de départ et d'arrivée
-nom_gare_depart = st.selectbox("Choisissez votre gare de départ:", df_gares['nom'])
-nom_gare_arrivee = st.selectbox("Choisissez votre gare d'arrivée:", df_gares['nom'])
+nom_gare_depart = st.selectbox("Choisissez votre gare de départ:", df_gares['name'])
+nom_gare_arrivee = st.selectbox("Choisissez votre gare d'arrivée:", df_gares['name'])
 
 # Recherche des identifiants des gares sélectionnées
 id_gare_depart = df_gares[df_gares['nom'] == nom_gare_depart]['id'].values[0]
