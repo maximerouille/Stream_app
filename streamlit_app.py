@@ -65,14 +65,19 @@ def voyage(heure_depart):
 # Interface Streamlit
 st.title("Calculateur d'itinéraire SNCF")
 
-# Widgets pour sélectionner la date
-date_depart = st.date_input("Date de départ", datetime.now())
 
 # Widget pour que l'utilisateur puisse choisir l'heure
-heure_depart_utilisateur = st.time_input("Heure de départ souhaitée", datetime.now().time())
+# Message pour l'utilisateur
+st.write("Veuillez choisir l'heure de départ souhaitée :")
 
-# Combinaison de la date et de l'heure choisie par l'utilisateur
-datetime_depart = datetime.combine(date_depart, heure_depart_utilisateur)
+# Widgets pour sélectionner l'heure de départ
+heure_depart_utilisateur = st.time_input("Heure de départ souhaitée")
+
+# Si vous avez besoin d'une date en plus de l'heure
+date_depart_utilisateur = st.date_input("Date de départ", datetime.now())
+
+# Affichage de l'heure et de la date choisies pour confirmation
+st.write(f"Vous avez choisi de partir le {date_depart_utilisateur} à {heure_depart_utilisateur}.")
 
 if st.button("Calculer l'itinéraire"):
     rer_c, rer_b, rer_a = voyage(datetime_depart)
