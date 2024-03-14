@@ -52,8 +52,8 @@ nom_gare_depart = st.selectbox("Choisissez votre gare de départ:", df_gares['na
 nom_gare_arrivee = st.selectbox("Choisissez votre gare d'arrivée:", df_gares['name'])
 
 # Recherche des identifiants des gares sélectionnées
-id_gare_depart = df_gares[df_gares['nom'] == nom_gare_depart]['id'].values[0]
-id_gare_arrivee = df_gares[df_gares['nom'] == nom_gare_arrivee]['id'].values[0]
+id_gare_depart = df_gares[df_gares['name'] == nom_gare_depart]['id'].values[0]
+id_gare_arrivee = df_gares[df_gares['name'] == nom_gare_arrivee]['id'].values[0]
 
 # Widgets pour sélectionner l'heure et la date de départ
 heure_depart_utilisateur = st.time_input("Heure de départ souhaitée")
