@@ -91,4 +91,4 @@ if st.button("Calculer l'itinéraire"):
         else:
             st.error("Aucun trajet trouvé pour Châtelet à Nanterre.")
     except ValueError:
-        st.error("Format de date/heure invalide. Veuillez utiliser le format YYYY-MM)
+        st.error("Format de date/heure invalide. Veuillez utiliser le format YYYY-MM")
