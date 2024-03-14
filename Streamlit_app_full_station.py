@@ -57,7 +57,7 @@ def voyage_et_affichage(heure_depart, gare_depart, gares_intermediaires, gare_ar
             st.write(f"Segment de {segments[i]} à {segments[i+1]}")
             st.dataframe(df_segment)
             derniere_arrivee = df_segment['Arrivee'].max()
-            heure_actuelle_depart = derniere_arrivee + timedelta(minutes=10)  # Ajout d'un délai avant le prochain segment
+            heure_actuelle_depart = derniere_arrivee + timedelta(minutes=3)  # Ajout d'un délai avant le prochain segment
         else:
             st.write(f"Pas de trajet trouvé de {gare_debut} à {gare_fin}.")
 
