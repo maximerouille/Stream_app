@@ -75,7 +75,7 @@ heure_depart_utilisateur = st.time_input("Heure de départ souhaitée")
 
 # Si vous avez besoin d'une date en plus de l'heure
 date_depart_utilisateur = st.date_input("Date de départ", datetime.now())
-
+datetime_depart = datetime.combine(date_depart_utilisateur, heure_depart_utilisateur)
 # Affichage de l'heure et de la date choisies pour confirmation
 st.write(f"Vous avez choisi de partir le {date_depart_utilisateur} à {heure_depart_utilisateur}.")
 
