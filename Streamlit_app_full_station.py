@@ -14,7 +14,7 @@ token_auth = '6d5bd08e-9d01-40b0-a4f0-22adf3490cbc'
 
 def convertir_en_temps(chaine):
     '''Convertit en date la chaîne de caractères de l'API'''
-    return datetime.strptime(chaine.replace('T', ' '), '%Y%m%d %H%M%S')
+    return datetime.strptime(chaine, '%Y%m%dT%H%M%S')
 
 def convertir_en_chaine(dt):
     '''Convertit un datetime en chaîne de caractères au format de l'API'''
@@ -23,21 +23,18 @@ def convertir_en_chaine(dt):
 def extraire_donnees_trajet(reponse_api):
     '''Extrait les données d'un trajet de la réponse de l'API et les retourne sous forme de DataFrame'''
     rows = []
-    for journey in reponse_api['journeys']:
-        for section in journey['sections']:
-            if "stop_date_times" in section:
-                for i in section['stop_date_times']:
-                    rows.append(dict(
-                        Nom=i['stop_point']['name'],
-                        Depart=convertir_en_temps(i['departure_date_time']),
-                        Arrivee=convertir_en_temps(i['arrival_date_time'])
-                    ))
+    for section in reponse_api['journeys'][0]['sections']:
+        if "stop_date_times" in section:
+            for i in section['stop_date_times']:
+                rows.append({
+                    "Nom": i['stop_point']['name'],
+                    "Depart": convertir_en_temps(i['departure_date_time']),
+                    "Arrivee": convertir_en_temps(i['arrival_date_time'])
+                })
     return pd.DataFrame(rows)
-def voyage(heure_depart, gare_depart, gares_intermediaires, gare_arrivee):
-    segments = [gare_depart] + gares_intermediaires + [gare_arrivee]  # Construction de la liste des gares pour chaque segment
-    trajets_complets = pd.DataFrame()  # Initialisation d'un DataFrame vide pour stocker les résultats de chaque segment
 
-    # Initialisation de l'heure de départ pour le premier segment
+def voyage_et_affichage(heure_depart, gare_depart, gares_intermediaires, gare_arrivee):
+    segments = [gare_depart] + gares_intermediaires + [gare_arrivee]  # Construction de la liste des gares pour chaque segment
     heure_actuelle_depart = heure_depart
 
     for i in range(len(segments) - 1):
@@ -55,49 +52,35 @@ def voyage(heure_depart, gare_depart, gares_intermediaires, gare_arrivee):
         # Extraction des données du trajet pour le segment actuel
         df_segment = extraire_donnees_trajet(response)
         
-        # Si le DataFrame du segment n'est pas vide, ajustez l'heure de départ pour le prochain segment
+        # Affichage du DataFrame du segment actuel
         if not df_segment.empty:
+            st.write(f"Segment de {segments[i]} à {segments[i+1]}")
+            st.dataframe(df_segment)
             derniere_arrivee = df_segment['Arrivee'].max()
-            # Ajoute un délai avant le prochain segment (par exemple, 10 minutes)
-            heure_actuelle_depart = derniere_arrivee + timedelta(minutes=10)
-
-        # Concaténation des résultats du segment actuel avec les trajets complets
-        trajets_complets = pd.concat([trajets_complets, df_segment])
-
-    return trajets_complets
+            heure_actuelle_depart = derniere_arrivee + timedelta(minutes=10)  # Ajout d'un délai avant le prochain segment
+        else:
+            st.write(f"Pas de trajet trouvé de {gare_debut} à {gare_fin}.")
 
 # Interface Streamlit
-st.title("Calculateur d'itinéraire SNCF avec choix des gares intermédiaires")
+st.title("Calculateur d'itinéraire SNCF avec Gares Intermédiaires")
 
 # Sélection de la gare de départ et d'arrivée
 nom_gare_depart = st.selectbox("Choisissez votre gare de départ:", df_gares['name'])
 nom_gare_arrivee = st.selectbox("Choisissez votre gare d'arrivée:", df_gares['name'])
+
+# Identification des gares intermédiaires
+options_gares = df_gares['name'].tolist()
+gares_intermediaires = st.multiselect('Choisissez les gares intermédiaires (dans l\'ordre):', options_gares)
+
+# Conversion des noms en identifiants
+id_gare_depart = df_gares[df_gares['name'] == nom_gare_depart]['id'].values[0]
+id_gare_arrivee = df_gares[df_gares['name'] == nom_gare_arrivee]['id'].values[0]
+ids_gares_intermediaires = [df_gares[df_gares['name'] == nom]['id'].values[0] for nom in gares_intermediaires]
 
 # Widgets pour sélectionner l'heure et la date de départ
 heure_depart_utilisateur = st.time_input("Heure de départ souhaitée")
 date_depart_utilisateur = st.date_input("Date de départ", datetime.now())
 datetime_depart = datetime.combine(date_depart_utilisateur, heure_depart_utilisateur)
 
-# Demande à l'utilisateur s'il souhaite ajouter des gares intermédiaires
-ajouter_gares_intermediaires = st.checkbox("Ajouter des gares intermédiaires")
-
-id_gares_intermediaires = []
-if ajouter_gares_intermediaires:
-    nombre_gares_intermediaires = st.number_input("Combien de gares intermédiaires souhaitez-vous ajouter ?", min_value=0, max_value=5, value=1, step=1)
-    for i in range(int(nombre_gares_intermediaires)):
-        nom_gare_intermediaire = st.selectbox(f"Gare intermédiaire {i+1} :", df_gares['name'], key=i)
-        id_gare_intermediaire = df_gares[df_gares['name'] == nom_gare_intermediaire]['id'].values[0]
-        id_gares_intermediaires.append(id_gare_intermediaire)
-
-# Recherche des identifiants des gares sélectionnées
-id_gare_depart = df_gares[df_gares['name'] == nom_gare_depart]['id'].values[0]
-id_gare_arrivee = df_gares[df_gares['name'] == nom_gare_arrivee]['id'].values[0]
-
-# Affichage de l'heure et de la date choisies pour confirmation
-st.write(f"Vous avez choisi de partir le {date_depart_utilisateur} à {heure_depart_utilisateur}.")
-
-# Bouton pour calculer l'itinéraire
 if st.button("Calculer l'itinéraire"):
-    trajet = voyage(datetime_depart, id_gare_depart, id_gares_intermediaires, id_gare_arrivee)
-    st.subheader("Détails du trajet")
-    st.dataframe(trajet)
+    voyage_et_affichage(datetime_depart, id_gare_depart, ids_gares_intermediaires, id_gare_arrivee)
