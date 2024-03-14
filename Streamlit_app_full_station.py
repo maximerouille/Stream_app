@@ -4,7 +4,7 @@ import streamlit as st
 from datetime import datetime, timedelta
 
 # URL directe vers le fichier CSV brut sur GitHub
-url_csv = 'https://raw.githubusercontent.com/yourusername/yourrepository/main/gares.csv'
+url_csv = 'https://raw.githubusercontent.com/maximerouille/Stream_app/main/Listes_gares.csv'
 
 # Chargement des données des gares depuis GitHub
 df_gares = pd.read_csv(url_csv)
