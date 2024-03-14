@@ -32,61 +32,37 @@ def extraire_donnees_trajet(reponse_api):
             ))
     return pd.DataFrame(rows)
 
-def voyage(heure_depart):
-    date_depart = convertir_en_chaine(heure_depart)
-
-    # Choisy-le-Roi à Notre-Dame
-    rer_c_ntr_dame_response = requests.get(
-        f'https://api.sncf.com/v1/coverage/sncf/journeys?from={choisy_le_roi}&to={notre_dame}&datetime={date_depart}',
-        auth=(token_auth, '')
-    ).json()
-    rer_c_df = extraire_donnees_trajet(rer_c_ntr_dame_response)
-    derniere_arrivee_c = rer_c_df['Arrivee'].max()
-
-    # Notre-Dame à Châtelet, départ basé sur l'arrivée de RER C
-    date_depart = convertir_en_chaine(derniere_arrivee_c)
-    rer_b_chatelet_response = requests.get(
-        f'https://api.sncf.com/v1/coverage/sncf/journeys?from={notre_dame}&to={chatelet}&datetime={date_depart}',
-        auth=(token_auth, '')
-    ).json()
-    rer_b_df = extraire_donnees_trajet(rer_b_chatelet_response)
-    derniere_arrivee_b = rer_b_df['Arrivee'].max()
-
-    # Châtelet à Nanterre, départ basé sur l'arrivée de RER B
-    date_depart = convertir_en_chaine(derniere_arrivee_b)
-    rer_a_nanterre_response = requests.get(
-        f'https://api.sncf.com/v1/coverage/sncf/journeys?from={chatelet}&to={nanterre}&datetime={date_depart}',
-        auth=(token_auth, '')
-    ).json()
-    rer_a_df = extraire_donnees_trajet(rer_a_nanterre_response)
-
-    return rer_c_df, rer_b_df, rer_a_df
-
 # Interface Streamlit
 st.title("Calculateur d'itinéraire SNCF")
 
-
-# Widget pour que l'utilisateur puisse choisir l'heure
-# Message pour l'utilisateur
-st.write("Veuillez choisir l'heure de départ souhaitée :")
-
-# Widgets pour sélectionner l'heure de départ
-heure_depart_utilisateur = st.time_input("Heure de départ souhaitée")
-
-# Si vous avez besoin d'une date en plus de l'heure
-date_depart_utilisateur = st.date_input("Date de départ", datetime.now())
-datetime_depart = datetime.combine(date_depart_utilisateur, heure_depart_utilisateur)
-# Affichage de l'heure et de la date choisies pour confirmation
-st.write(f"Vous avez choisi de partir le {date_depart_utilisateur} à {heure_depart_utilisateur}.")
-
-if st.button("Calculer l'itinéraire"):
-    rer_c, rer_b, rer_a = voyage(datetime_depart)
-
-    st.subheader("Trajet de Choisy-le-Roi à Notre-Dame")
-    st.dataframe(rer_c)
-
-    st.subheader("Trajet de Notre-Dame à Châtelet")
-    st.dataframe(rer_b)
-
-    st.subheader("Trajet de Châtelet à Nanterre")
-    st.dataframe(rer_a)
+# Chargement et sélection des gares
+uploaded_file = st.file_uploader("Choisissez un fichier CSV des gares", type="csv")
+if uploaded_file is not None:
+    df_gares = pd.read_csv(uploaded_file)
+    gare_depart_nom = st.selectbox("Choisissez la gare de départ", df_gares['Nom'].unique())
+    gare_arrivee_nom = st.selectbox("Choisissez la gare d'arrivée", df_gares['Nom'].unique())
+    id_gare_depart = df_gares[df_gares['Nom'] == gare_depart_nom]['Identifiant'].iloc[0]
+    id_gare_arrivee = df_gares[df_gares['Nom'] == gare_arrivee_nom]['Identifiant'].iloc[0]
+    
+    # Sélection de la date et l'heure
+    date_depart = st.date_input("Date de départ", datetime.now())
+    heure_depart = st.time_input('Heure de départ', datetime.now().time())
+    datetime_depart = datetime.combine(date_depart, heure_depart)
+    
+    def voyage(id_depart, id_arrivee, datetime_depart):
+        date_depart_chaine = convertir_en_chaine(datetime_depart)
+        response = requests.get(
+            f'https://api.sncf.com/v1/coverage/sncf/journeys?from={id_depart}&to={id_arrivee}&datetime={date_depart_chaine}',
+            auth=(token_auth, '')
+        ).json()
+        return extraire_donnees_trajet(response)
+    
+    if st.button("Calculer l'itinéraire"):
+        trajet_df = voyage(id_gare_depart, id_gare_arrivee, datetime_depart)
+        if not trajet_df.empty:
+            st.subheader(f"Trajet de {gare_depart_nom} à {gare_arrivee_nom}")
+            st.dataframe(trajet_df)
+        else:
+            st.write("Aucun trajet trouvé pour les options sélectionnées.")
+else:
+    st.write("Veuillez téléverser un fichier CSV des gares.")
