@@ -65,20 +65,30 @@ def voyage(heure_depart):
 # Interface Streamlit
 st.title("Calculateur d'itinéraire SNCF")
 
-# Widgets pour sélectionner la date et l'heure de départ
-date_depart = st.date_input("Date de départ", datetime.now())
-heure_depart = st.time_input('Heure de départ', datetime.now().time())
-
-datetime_depart = datetime.combine(date_depart, heure_depart)
+# Entrées utilisateur pour la date et l'heure de départ
+date_heure_depart_str = st.text_input("Entrez la date et l'heure de départ (format YYYY-MM-DD HH:MM)", value="")
 
 if st.button("Calculer l'itinéraire"):
-    rer_c, rer_b, rer_a = voyage(datetime_depart)
+    try:
+        datetime_depart = datetime.strptime(date_heure_depart_str, "%Y-%m-%d %H:%M")
+        rer_c, rer_b, rer_a = voyage(datetime_depart)
 
-    st.subheader("Trajet de Choisy-le-Roi à Notre-Dame")
-    st.dataframe(rer_c)
+        if not rer_c.empty:
+            st.subheader("Trajet de Choisy-le-Roi à Notre-Dame")
+            st.dataframe(rer_c)
+        else:
+            st.error("Aucun trajet trouvé pour Choisy-le-Roi à Notre-Dame.")
 
-    st.subheader("Trajet de Notre-Dame à Châtelet")
-    st.dataframe(rer_b)
+        if not rer_b.empty:
+            st.subheader("Trajet de Notre-Dame à Châtelet")
+            st.dataframe(rer_b)
+        else:
+            st.error("Aucun trajet trouvé pour Notre-Dame à Châtelet.")
 
-    st.subheader("Trajet de Châtelet à Nanterre")
-    st.dataframe(rer_a)
+        if not rer_a.empty:
+            st.subheader("Trajet de Châtelet à Nanterre")
+            st.dataframe(rer_a)
+        else:
+            st.error("Aucun trajet trouvé pour Châtelet à Nanterre.")
+    except ValueError:
+        st.error("Format de date/heure invalide. Veuillez utiliser le format YYYY-MM
