@@ -28,42 +28,36 @@ def extraire_donnees_trajet(reponse_api):
             for i in section['stop_date_times']:
                 rows.append({
                     "Nom": i['stop_point']['name'],
-                    "Depart": convertir_en_temps(i['departure_date_time']),
-                    "Arrivee": convertir_en_temps(i['arrival_date_time'])
+                    "Depart": convertir_en_temps(i['departure_date_time'])
                 })
     return pd.DataFrame(rows)
 
-# Nouvelle fonction pour calculer et afficher le trajet
 def calculer_voyage_arrivee(heure_arrivee, gare_depart, gare_arrivee):
-    # Conversion de l'heure d'arrivée souhaitée en format de chaîne accepté par l'API
     date_arrivee_chaine = convertir_en_chaine(heure_arrivee)
     
-    # Requête à l'API pour le trajet
     response = requests.get(
         f'https://api.sncf.com/v1/coverage/sncf/journeys?from={gare_depart}&to={gare_arrivee}&datetime={date_arrivee_chaine}&datetime_represents=arrival',
         auth=(token_auth, '')
     ).json()
 
-    # Extraction et affichage des données du trajet
     df_trajet = extraire_donnees_trajet(response)
     if not df_trajet.empty:
-        st.write(f"Pour arriver à {gare_arrivee} à {heure_arrivee.strftime('%H:%M')}, vous devez partir de {gare_depart} à:")
-        st.dataframe(df_trajet)
+        heure_de_depart = df_trajet['Depart'].min()
+        st.write(f"L'heure de départ est : {heure_de_depart.strftime('%H:%M')}, l'heure d'arrivée est : {heure_arrivee.strftime('%H:%M')}")
+        st.write("Détails du trajet :")
+        st.dataframe(df_trajet[['Nom', 'Depart']])
     else:
         st.write("Désolé, aucun trajet trouvé.")
 
 # Interface Streamlit
 st.title("Planificateur de voyage SNCF")
 
-# Sélection de la gare de départ et d'arrivée
 nom_gare_depart = st.selectbox("Choisissez votre gare de départ :", df_gares['name'])
 nom_gare_arrivee = st.selectbox("Choisissez votre gare d'arrivée :", df_gares['name'])
 
-# Conversion des noms en identifiants
 id_gare_depart = df_gares[df_gares['name'] == nom_gare_depart]['id'].values[0]
 id_gare_arrivee = df_gares[df_gares['name'] == nom_gare_arrivee]['id'].values[0]
 
-# Widget pour sélectionner l'heure d'arrivée souhaitée
 heure_arrivee_utilisateur = st.time_input("À quelle heure souhaitez-vous arriver ?", datetime.now())
 date_arrivee_utilisateur = st.date_input("Quel jour souhaitez-vous arriver ?", datetime.now())
 datetime_arrivee = datetime.combine(date_arrivee_utilisateur, heure_arrivee_utilisateur)
