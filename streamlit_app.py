@@ -3,90 +3,70 @@ import pandas as pd
 import streamlit as st
 from datetime import datetime, timedelta
 
+# URL directe vers le fichier CSV brut sur GitHub
+url_csv = 'https://raw.githubusercontent.com/maximerouille/Stream_app/main/Listes_gares.csv'
+
+# Chargement des données des gares depuis GitHub
+df_gares = pd.read_csv(url_csv)
+
 # Remplacez 'YOUR_TOKEN_HERE' par votre propre token d'authentification
-token_auth = '6d5bd08e-9d01-40b0-a4f0-22adf3490cbc'
+token_auth = '6d5bd08e-9d01-40b0-a4f0-22adf3490cbc'  # Assurez-vous de mettre votre token d'authentification ici
 
 def convertir_en_temps(chaine):
     '''Convertit en date la chaîne de caractères de l'API'''
-    return datetime.strptime(chaine.replace('T', ''), '%Y%m%d%H%M%S')
+    return datetime.strptime(chaine, '%Y%m%dT%H%M%S')
 
 def convertir_en_chaine(dt):
     '''Convertit un datetime en chaîne de caractères au format de l'API'''
     return datetime.strftime(dt, '%Y%m%dT%H%M%S')
 
-choisy_le_roi = 'stop_area:SNCF:87545285'
-notre_dame = 'stop_area:SNCF:87785436'
-chatelet = "stop_area:SNCF:87758607"
-nanterre = "stop_area:SNCF:87758029"
-
 def extraire_donnees_trajet(reponse_api):
     '''Extrait les données d'un trajet de la réponse de l'API et les retourne sous forme de DataFrame'''
     rows = []
-    section = reponse_api['journeys'][0]['sections'][1]
-    if "stop_date_times" in section:
-        for i in section['stop_date_times']:
-            rows.append(dict(
-                Nom=i['stop_point']['name'],
-                Depart=convertir_en_temps(i['departure_date_time']),
-                Arrivee=convertir_en_temps(i['arrival_date_time'])
-            ))
+    for section in reponse_api['journeys'][0]['sections']:
+        if "stop_date_times" in section:
+            for i in section['stop_date_times']:
+                rows.append({
+                    "Nom": i['stop_point']['name'],
+                    "Depart": convertir_en_temps(i['departure_date_time']),
+                    "Arrivee": convertir_en_temps(i['arrival_date_time'])
+                })
     return pd.DataFrame(rows)
 
-def voyage(heure_depart):
-    date_depart = convertir_en_chaine(heure_depart)
-
-    # Choisy-le-Roi à Notre-Dame
-    rer_c_ntr_dame_response = requests.get(
-        f'https://api.sncf.com/v1/coverage/sncf/journeys?from={choisy_le_roi}&to={notre_dame}&datetime={date_depart}',
+# Nouvelle fonction pour calculer et afficher le trajet
+def calculer_voyage_arrivee(heure_arrivee, gare_depart, gare_arrivee):
+    # Conversion de l'heure d'arrivée souhaitée en format de chaîne accepté par l'API
+    date_arrivee_chaine = convertir_en_chaine(heure_arrivee)
+    
+    # Requête à l'API pour le trajet
+    response = requests.get(
+        f'https://api.sncf.com/v1/coverage/sncf/journeys?from={gare_depart}&to={gare_arrivee}&datetime={date_arrivee_chaine}&datetime_represents=arrival',
         auth=(token_auth, '')
     ).json()
-    rer_c_df = extraire_donnees_trajet(rer_c_ntr_dame_response)
-    derniere_arrivee_c = rer_c_df['Arrivee'].max()
 
-    # Notre-Dame à Châtelet, départ basé sur l'arrivée de RER C
-    date_depart = convertir_en_chaine(derniere_arrivee_c)
-    rer_b_chatelet_response = requests.get(
-        f'https://api.sncf.com/v1/coverage/sncf/journeys?from={notre_dame}&to={chatelet}&datetime={date_depart}',
-        auth=(token_auth, '')
-    ).json()
-    rer_b_df = extraire_donnees_trajet(rer_b_chatelet_response)
-    derniere_arrivee_b = rer_b_df['Arrivee'].max()
-
-    # Châtelet à Nanterre, départ basé sur l'arrivée de RER B
-    date_depart = convertir_en_chaine(derniere_arrivee_b)
-    rer_a_nanterre_response = requests.get(
-        f'https://api.sncf.com/v1/coverage/sncf/journeys?from={chatelet}&to={nanterre}&datetime={date_depart}',
-        auth=(token_auth, '')
-    ).json()
-    rer_a_df = extraire_donnees_trajet(rer_a_nanterre_response)
-
-    return rer_c_df, rer_b_df, rer_a_df
+    # Extraction et affichage des données du trajet
+    df_trajet = extraire_donnees_trajet(response)
+    if not df_trajet.empty:
+        st.write(f"Pour arriver à {gare_arrivee} à {heure_arrivee.strftime('%H:%M')}, vous devez partir de {gare_depart} à:")
+        st.dataframe(df_trajet)
+    else:
+        st.write("Désolé, aucun trajet trouvé.")
 
 # Interface Streamlit
-st.title("Calculateur d'itinéraire SNCF")
+st.title("Planificateur de voyage SNCF")
 
+# Sélection de la gare de départ et d'arrivée
+nom_gare_depart = st.selectbox("Choisissez votre gare de départ :", df_gares['name'])
+nom_gare_arrivee = st.selectbox("Choisissez votre gare d'arrivée :", df_gares['name'])
 
-# Widget pour que l'utilisateur puisse choisir l'heure
-# Message pour l'utilisateur
-st.write("Veuillez choisir l'heure de départ souhaitée :")
+# Conversion des noms en identifiants
+id_gare_depart = df_gares[df_gares['name'] == nom_gare_depart]['id'].values[0]
+id_gare_arrivee = df_gares[df_gares['name'] == nom_gare_arrivee]['id'].values[0]
 
-# Widgets pour sélectionner l'heure de départ
-heure_depart_utilisateur = st.time_input("Heure de départ souhaitée")
+# Widget pour sélectionner l'heure d'arrivée souhaitée
+heure_arrivee_utilisateur = st.time_input("À quelle heure souhaitez-vous arriver ?", datetime.now())
+date_arrivee_utilisateur = st.date_input("Quel jour souhaitez-vous arriver ?", datetime.now())
+datetime_arrivee = datetime.combine(date_arrivee_utilisateur, heure_arrivee_utilisateur)
 
-# Si vous avez besoin d'une date en plus de l'heure
-date_depart_utilisateur = st.date_input("Date de départ", datetime.now())
-datetime_depart = datetime.combine(date_depart_utilisateur, heure_depart_utilisateur)
-# Affichage de l'heure et de la date choisies pour confirmation
-st.write(f"Vous avez choisi de partir le {date_depart_utilisateur} à {heure_depart_utilisateur}.")
-
-if st.button("Calculer l'itinéraire"):
-    rer_c, rer_b, rer_a = voyage(datetime_depart)
-
-    st.subheader("Trajet de Choisy-le-Roi à Notre-Dame")
-    st.dataframe(rer_c)
-
-    st.subheader("Trajet de Notre-Dame à Châtelet")
-    st.dataframe(rer_b)
-
-    st.subheader("Trajet de Châtelet à Nanterre")
-    st.dataframe(rer_a)
+if st.button("Planifier mon voyage"):
+    calculer_voyage_arrivee(datetime_arrivee, id_gare_depart, id_gare_arrivee)
