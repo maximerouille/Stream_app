@@ -43,7 +43,8 @@ def calculer_voyage_arrivee(heure_arrivee, gare_depart, gare_arrivee):
     df_trajet = extraire_donnees_trajet(response)
     if not df_trajet.empty:
         heure_de_depart = df_trajet['Depart'].min()
-        st.write(f"We have to leave at : {heure_de_depart.strftime('%H:%M')}, We will arrive at : {heure_arrivee.strftime('%H:%M')}")
+        heure_de_arrivance = df_trajet['Depart'].max()
+        st.write(f"We have to leave at : {heure_de_depart.strftime('%H:%M')}, We will arrive at : {heure_de_arrivance.strftime('%H:%M')}")
         st.write("Some details :")
         st.dataframe(df_trajet[['Nom', 'Depart']])
     else:
