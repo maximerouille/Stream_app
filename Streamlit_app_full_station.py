@@ -50,7 +50,7 @@ def calculer_voyage_arrivee(heure_arrivee, gare_depart, gare_arrivee):
         st.write("FOUND NADA")
 
 # Interface Streamlit
-st.title("For you bobo")
+st.title("For you bobo TE AMO")
 
 nom_gare_depart = st.selectbox("WHERE IS THE STATION WE TAKE :", df_gares['name'])
 nom_gare_arrivee = st.selectbox("WHERE WE ARRIVE :", df_gares['name'])
