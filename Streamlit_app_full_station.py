@@ -62,15 +62,15 @@ def voyage_et_affichage(heure_depart, gare_depart, gares_intermediaires, gare_ar
             st.write(f"Pas de trajet trouvé de {gare_debut} à {gare_fin}.")
 
 # Interface Streamlit
-st.title("Calculateur d'itinéraire SNCF avec Gares Intermédiaires")
+st.title("FUCK YOU")
 
 # Sélection de la gare de départ et d'arrivée
-nom_gare_depart = st.selectbox("Choisissez votre gare de départ:", df_gares['name'])
-nom_gare_arrivee = st.selectbox("Choisissez votre gare d'arrivée:", df_gares['name'])
+nom_gare_depart = st.selectbox("Choose the departure station:", df_gares['name'])
+nom_gare_arrivee = st.selectbox("Choose the arrival station:", df_gares['name'])
 
 # Identification des gares intermédiaires
 options_gares = df_gares['name'].tolist()
-gares_intermediaires = st.multiselect('Choisissez les gares intermédiaires (dans l\'ordre):', options_gares)
+gares_intermediaires = st.multiselect('Choose other station you'll have to go (optional):', options_gares)
 
 # Conversion des noms en identifiants
 id_gare_depart = df_gares[df_gares['name'] == nom_gare_depart]['id'].values[0]
@@ -78,9 +78,9 @@ id_gare_arrivee = df_gares[df_gares['name'] == nom_gare_arrivee]['id'].values[0]
 ids_gares_intermediaires = [df_gares[df_gares['name'] == nom]['id'].values[0] for nom in gares_intermediaires]
 
 # Widgets pour sélectionner l'heure et la date de départ
-heure_depart_utilisateur = st.time_input("Heure de départ souhaitée")
-date_depart_utilisateur = st.date_input("Date de départ", datetime.now())
+heure_depart_utilisateur = st.time_input("What time we go bobo")
+date_depart_utilisateur = st.date_input("What day bobo", datetime.now())
 datetime_depart = datetime.combine(date_depart_utilisateur, heure_depart_utilisateur)
 
-if st.button("Calculer l'itinéraire"):
+if st.button("Calcultating... te amo"):
     voyage_et_affichage(datetime_depart, id_gare_depart, ids_gares_intermediaires, id_gare_arrivee)
