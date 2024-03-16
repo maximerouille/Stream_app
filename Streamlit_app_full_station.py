@@ -43,24 +43,24 @@ def calculer_voyage_arrivee(heure_arrivee, gare_depart, gare_arrivee):
     df_trajet = extraire_donnees_trajet(response)
     if not df_trajet.empty:
         heure_de_depart = df_trajet['Depart'].min()
-        st.write(f"L'heure de départ est : {heure_de_depart.strftime('%H:%M')}, l'heure d'arrivée est : {heure_arrivee.strftime('%H:%M')}")
-        st.write("Détails du trajet :")
+        st.write(f"We have to leave at : {heure_de_depart.strftime('%H:%M')}, We will arrive at : {heure_arrivee.strftime('%H:%M')}")
+        st.write("Some details :")
         st.dataframe(df_trajet[['Nom', 'Depart']])
     else:
-        st.write("Désolé, aucun trajet trouvé.")
+        st.write("FOUND NADA")
 
 # Interface Streamlit
-st.title("Planificateur de voyage SNCF")
+st.title("For you bobo")
 
-nom_gare_depart = st.selectbox("Choisissez votre gare de départ :", df_gares['name'])
-nom_gare_arrivee = st.selectbox("Choisissez votre gare d'arrivée :", df_gares['name'])
+nom_gare_depart = st.selectbox("WHERE IS THE STATION WE TAKE :", df_gares['name'])
+nom_gare_arrivee = st.selectbox("WHERE WE ARRIVE :", df_gares['name'])
 
 id_gare_depart = df_gares[df_gares['name'] == nom_gare_depart]['id'].values[0]
 id_gare_arrivee = df_gares[df_gares['name'] == nom_gare_arrivee]['id'].values[0]
 
-heure_arrivee_utilisateur = st.time_input("À quelle heure souhaitez-vous arriver ?", datetime.now())
-date_arrivee_utilisateur = st.date_input("Quel jour souhaitez-vous arriver ?", datetime.now())
+heure_arrivee_utilisateur = st.time_input("WHAT TIME WE ARRIVE AAAAAAAAAA ?", datetime.now())
+date_arrivee_utilisateur = st.date_input("Which day ?", datetime.now())
 datetime_arrivee = datetime.combine(date_arrivee_utilisateur, heure_arrivee_utilisateur)
 
-if st.button("Planifier mon voyage"):
+if st.button("CLIIICK AQUI !!!!"):
     calculer_voyage_arrivee(datetime_arrivee, id_gare_depart, id_gare_arrivee)
