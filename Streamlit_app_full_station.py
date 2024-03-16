@@ -70,7 +70,7 @@ nom_gare_arrivee = st.selectbox("Choose the arrival station:", df_gares['name'])
 
 # Identification des gares intermédiaires
 options_gares = df_gares['name'].tolist()
-gares_intermediaires = st.multiselect('Choose other station you'll have to go (optional):', options_gares)
+gares_intermediaires = st.multiselect('Choose other station you will have to go (optional):', options_gares)
 
 # Conversion des noms en identifiants
 id_gare_depart = df_gares[df_gares['name'] == nom_gare_depart]['id'].values[0]
