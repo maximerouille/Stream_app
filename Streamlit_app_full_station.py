@@ -82,5 +82,5 @@ heure_depart_utilisateur = st.time_input("What time we go bobo")
 date_depart_utilisateur = st.date_input("What day bobo", datetime.now())
 datetime_depart = datetime.combine(date_depart_utilisateur, heure_depart_utilisateur)
 
-if st.button("Calcultating... te amo"):
+if st.button("CLICK HEEEEERE... te amo"):
     voyage_et_affichage(datetime_depart, id_gare_depart, ids_gares_intermediaires, id_gare_arrivee)
