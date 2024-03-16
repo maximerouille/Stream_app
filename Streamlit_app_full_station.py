@@ -1,3 +1,5 @@
+
+
 import requests
 import pandas as pd
 import streamlit as st
@@ -10,7 +12,7 @@ url_csv = 'https://raw.githubusercontent.com/maximerouille/Stream_app/main/Liste
 df_gares = pd.read_csv(url_csv)
 
 # Remplacez 'YOUR_TOKEN_HERE' par votre propre token d'authentification
-token_auth = '6d5bd08e-9d01-40b0-a4f0-22adf3490cbc'
+token_auth = '6d5bd08e-9d01-40b0-a4f0-22adf3490cbc'  # Assurez-vous de mettre votre token d'authentification ici
 
 def convertir_en_temps(chaine):
     '''Convertit en date la chaîne de caractères de l'API'''
@@ -33,54 +35,40 @@ def extraire_donnees_trajet(reponse_api):
                 })
     return pd.DataFrame(rows)
 
-def voyage_et_affichage(heure_depart, gare_depart, gares_intermediaires, gare_arrivee):
-    segments = [gare_depart] + gares_intermediaires + [gare_arrivee]  # Construction de la liste des gares pour chaque segment
-    heure_actuelle_depart = heure_depart
+# Nouvelle fonction pour calculer et afficher le trajet
+def calculer_voyage_arrivee(heure_arrivee, gare_depart, gare_arrivee):
+    # Conversion de l'heure d'arrivée souhaitée en format de chaîne accepté par l'API
+    date_arrivee_chaine = convertir_en_chaine(heure_arrivee)
+    
+    # Requête à l'API pour le trajet
+    response = requests.get(
+        f'https://api.sncf.com/v1/coverage/sncf/journeys?from={gare_depart}&to={gare_arrivee}&datetime={date_arrivee_chaine}&datetime_represents=arrival',
+        auth=(token_auth, '')
+    ).json()
 
-    for i in range(len(segments) - 1):
-        gare_debut = segments[i]
-        gare_fin = segments[i+1]
-
-        date_depart_segment = convertir_en_chaine(heure_actuelle_depart)
-
-        # Requête à l'API pour le segment actuel
-        response = requests.get(
-            f'https://api.sncf.com/v1/coverage/sncf/journeys?from={gare_debut}&to={gare_fin}&datetime={date_depart_segment}',
-            auth=(token_auth, '')
-        ).json()
-
-        # Extraction des données du trajet pour le segment actuel
-        df_segment = extraire_donnees_trajet(response)
-        
-        # Affichage du DataFrame du segment actuel
-        if not df_segment.empty:
-            st.write(f"Segment de {segments[i]} à {segments[i+1]}")
-            st.dataframe(df_segment)
-            derniere_arrivee = df_segment['Arrivee'].max()
-            heure_actuelle_depart = derniere_arrivee + timedelta(minutes=3)  # Ajout d'un délai avant le prochain segment
-        else:
-            st.write(f"Pas de trajet trouvé de {gare_debut} à {gare_fin}.")
+    # Extraction et affichage des données du trajet
+    df_trajet = extraire_donnees_trajet(response)
+    if not df_trajet.empty:
+        st.write(f"Pour arriver à {gare_arrivee} à {heure_arrivee.strftime('%H:%M')}, vous devez partir de {gare_depart} à:")
+        st.dataframe(df_trajet)
+    else:
+        st.write("Désolé, aucun trajet trouvé.")
 
 # Interface Streamlit
-st.title("FUCK YOU")
+st.title("Planificateur de voyage SNCF")
 
 # Sélection de la gare de départ et d'arrivée
-nom_gare_depart = st.selectbox("Choose the departure station:", df_gares['name'])
-nom_gare_arrivee = st.selectbox("Choose the arrival station:", df_gares['name'])
-
-# Identification des gares intermédiaires
-options_gares = df_gares['name'].tolist()
-gares_intermediaires = st.multiselect('Choose other station you will have to go (optional):', options_gares)
+nom_gare_depart = st.selectbox("Choisissez votre gare de départ :", df_gares['name'])
+nom_gare_arrivee = st.selectbox("Choisissez votre gare d'arrivée :", df_gares['name'])
 
 # Conversion des noms en identifiants
 id_gare_depart = df_gares[df_gares['name'] == nom_gare_depart]['id'].values[0]
 id_gare_arrivee = df_gares[df_gares['name'] == nom_gare_arrivee]['id'].values[0]
-ids_gares_intermediaires = [df_gares[df_gares['name'] == nom]['id'].values[0] for nom in gares_intermediaires]
 
-# Widgets pour sélectionner l'heure et la date de départ
-heure_depart_utilisateur = st.time_input("What time we go bobo")
-date_depart_utilisateur = st.date_input("What day bobo", datetime.now())
-datetime_depart = datetime.combine(date_depart_utilisateur, heure_depart_utilisateur)
+# Widget pour sélectionner l'heure d'arrivée souhaitée
+heure_arrivee_utilisateur = st.time_input("À quelle heure souhaitez-vous arriver ?", datetime.now())
+date_arrivee_utilisateur = st.date_input("Quel jour souhaitez-vous arriver ?", datetime.now())
+datetime_arrivee = datetime.combine(date_arrivee_utilisateur, heure_arrivee_utilisateur)
 
-if st.button("CLICK HEEEEERE... te amo"):
-    voyage_et_affichage(datetime_depart, id_gare_depart, ids_gares_intermediaires, id_gare_arrivee)
+if st.button("Planifier mon voyage"):
+    calculer_voyage_arrivee(datetime_arrivee, id_gare_depart, id_gare_arrivee)
